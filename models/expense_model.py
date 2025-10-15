@@ -10,7 +10,7 @@ class ExpenseModel(db.Model):
     category = db.Column(db.String(255), nullable = False)
     description = db.Column(db.String(255))
     user_id = db.Column(db.String(255), db.ForeignKey("users.id"), nullable=False)
-    user = db.relationship("UserDBModel", back_populates="expenses")
+    user = db.relationship("UserModel", back_populates="expenses")
     createdAt = db.Column(
         db.DateTime,
         default=datetime.utcnow,
@@ -30,7 +30,6 @@ class ExpenseModel(db.Model):
             "amount": self.amount,
             "category": self.category,
             "description": self.description,
-            "date": self.date.isoformat(),
             "user_id": self.user_id,
             "createdAt": self.createdAt.isoformat(),
             "updatedAt": self.updatedAt.isoformat(),

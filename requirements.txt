@@ -1,3 +1,6 @@
 Flask
 Flask-Smorest
 Flask-SQLAlchemy
+python-dotenv 
+flask-jwt-extended
+psycopg2-binary

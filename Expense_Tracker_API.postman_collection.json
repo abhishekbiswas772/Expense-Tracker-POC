@@ -1,0 +1,390 @@
+{
+	"info": {
+		"_postman_id": "expense-tracker-api-v1",
+		"name": "Expense Tracker API",
+		"description": "Complete API collection for Expense Tracker with JWT authentication",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Signup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"user_email\", pm.request.body.raw ? JSON.parse(pm.request.body.raw).email : '');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"email\": \"testuser@example.com\",\n    \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/signup",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"signup"
+							]
+						},
+						"description": "Create a new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"    pm.environment.set(\"refresh_token\", jsonData.refresh_token);",
+									"    pm.environment.set(\"user_email\", jsonData.data.email);",
+									"    console.log(\"Tokens saved to environment\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"testuser@example.com\",\n    \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"login"
+							]
+						},
+						"description": "Login with email and password. Returns access and refresh tokens."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"    console.log(\"New access token saved\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{refresh_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/refresh-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"refresh-token"
+							]
+						},
+						"description": "Get a new access token using refresh token. Old refresh token is blacklisted."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Expenses",
+			"item": [
+				{
+					"name": "Create Expense",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"expense_id\", jsonData.id);",
+									"    console.log(\"Expense ID saved: \" + jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Grocery Shopping\",\n    \"amount\": 150.75,\n    \"category\": \"Groceries\",\n    \"description\": \"Weekly grocery shopping at Walmart\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/create-expense",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"create-expense"
+							]
+						},
+						"description": "Create a new expense. Requires fresh JWT token. User email is extracted from JWT.\n\nCategories: Groceries, Leisure, Electronics, Utilities, Clothing, Health, Others"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Expense",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"expense_id\": \"{{expense_id}}\",\n    \"title\": \"Updated Grocery Shopping\",\n    \"amount\": 175.50,\n    \"category\": \"Groceries\",\n    \"description\": \"Updated weekly grocery shopping\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/update-expense",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"update-expense"
+							]
+						},
+						"description": "Update an existing expense. Requires fresh JWT token. All fields except expense_id are optional."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Expense",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"expense_id\": \"{{expense_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/delete-expense",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"delete-expense"
+							]
+						},
+						"description": "Delete an expense by ID. Requires fresh JWT token."
+					},
+					"response": []
+				},
+				{
+					"name": "Filter Expenses - Past Week",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/filter-expense",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"filter-expense"
+							]
+						},
+						"description": "Get expenses from past 7 days (default). User is identified from JWT token."
+					},
+					"response": []
+				},
+				{
+					"name": "Filter Expenses - Past Month",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/filter-expense?filter_category=past_month",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"filter-expense"
+							],
+							"query": [
+								{
+									"key": "filter_category",
+									"value": "past_month"
+								}
+							]
+						},
+						"description": "Get expenses from past 30 days"
+					},
+					"response": []
+				},
+				{
+					"name": "Filter Expenses - Last 3 Months",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/filter-expense?filter_category=last_three_month",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"filter-expense"
+							],
+							"query": [
+								{
+									"key": "filter_category",
+									"value": "last_three_month"
+								}
+							]
+						},
+						"description": "Get expenses from past 90 days"
+					},
+					"response": []
+				},
+				{
+					"name": "Filter Expenses - Custom Date Range",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/filter-expense?filter_category=custom&from_date=2025-01-01&to_date=2025-01-31",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"filter-expense"
+							],
+							"query": [
+								{
+									"key": "filter_category",
+									"value": "custom"
+								},
+								{
+									"key": "from_date",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "to_date",
+									"value": "2025-01-31"
+								}
+							]
+						},
+						"description": "Get expenses for custom date range. Date format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	]
+}

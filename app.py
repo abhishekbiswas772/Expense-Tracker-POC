@@ -1,8 +1,13 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_smorest import Api
-from flask_sqlalchemy import SQLAlchemy
-from extension import db  # your existing db instance
-from route.auth_route import auth_blp
+from extension import db
+from route.auth_route import auth_blp, BLOCKLIST
+from route.expense_route import expense_blp
+from dotenv import load_dotenv
+import os
+from flask_jwt_extended import JWTManager
+
+load_dotenv()
 
 def create_app():
     app = Flask(__name__)
@@ -13,20 +18,81 @@ def create_app():
     app.config["OPENAPI_URL_PREFIX"] = "/"
     app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
     app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET")
 
     db.init_app(app)
-
     api = Api(app)
-    api.register_blueprint(auth_blp)
+    jwt = JWTManager(app)
+
+    @jwt.additional_claims_loader
+    def add_claims_loader(identity):
+        if identity == os.getenv("ADMIN_EMAIL"):
+            return {"is_admin" : True}
+    
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return (
+            jsonify({"message": "The token has expired.", "error": "token_expired"}),
+            401,
+        )
+    
+    @jwt.needs_fresh_token_loader
+    def token_not_fresh_callback(jwt_header, jwt_payload):
+        return (
+            jsonify(
+                {
+                    "description": "The token is not fresh.",
+                    "error": "fresh_token_required",
+                }
+            ),
+            401,
+        )
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error):
+        return (
+            jsonify(
+                {"message": "Signature verification failed.", "error": "invalid_token"}
+            ),
+            401,
+        )
+
+    @jwt.unauthorized_loader
+    def missing_token_callback(error):
+        return (
+            jsonify(
+                {
+                    "description": "Request does not contain an access token.",
+                    "error": "authorization_required",
+                }
+            ),
+            401,
+        )
+
+    @jwt.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        return (
+            jsonify(
+                {"description": "The token has been revoked.", "error": "token_revoked"}
+            ),
+            401,
+        )
+
+    @jwt.token_in_blocklist_loader
+    def check_if_token_revoked(jwt_header, jwt_payload):
+        return jwt_payload["jti"] in BLOCKLIST
 
     with app.app_context():
         db.create_all()
+
+    api.register_blueprint(auth_blp)
+    api.register_blueprint(expense_blp)
 
     return app
 
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
