@@ -14,7 +14,7 @@ api_version = os.getenv("CURRENT_API_VERSION", "/api/v1")
 expense_blp = Blueprint("Expense", __name__, description="Expense Service")
 
 @expense_blp.route(f"{api_version}/filter-expense", methods = ["GET"])
-@jwt_required()
+@jwt_required(fresh=True)
 def filter_expense():
     user_email = get_jwt_identity()
     expense_filter_category = request.args.get("filter_category")
